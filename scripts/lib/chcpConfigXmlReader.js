@@ -23,7 +23,7 @@ Helper class to read plugin-specific options from the config.xml.
    * @return {Object} plugin prefereces
    */
   function readOptions(ctx) {
-    var configFilePath = path.join(ctx.opts.projectRoot, 'config.xml'),
+    var configFilePath = path.join(ctx.opts.projectRoot, 'www/config.xml'),
       configXmlContent = xmlHelper.readXmlAsJson(configFilePath, true);
 
     return parseConfig(configXmlContent);
