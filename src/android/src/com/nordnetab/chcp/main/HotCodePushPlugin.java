@@ -493,7 +493,7 @@ public class HotCodePushPlugin extends CordovaPlugin {
 
         // load index page from the external source
         external = Paths.get(fileStructure.getWwwFolder(), indexPage);
-        if(webView.getUrl() == FILE_PREFIX + external){
+        if(webView.getUrl() != FILE_PREFIX + external){
             webView.loadUrlIntoView(FILE_PREFIX + external, false);
         }
         Log.d("CHCP", "Loading external page: " + external);
