@@ -5,6 +5,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "HCPUpdateRequest.h"
 
 /**
  *  Utility class to perform update download.
@@ -28,13 +29,13 @@
 
 /**
  *  Add update download task to queue. It will be executed as fast as possible.
+ *  
+ *  @param request update download parameters
+ *  @param error   error object reference; filled with data when we failed to launch the update task
  *
- *  @param configUrl url to the application config on the server
- *  @param currentVersion current working version of the web content
- *
- *  @return id of the created worker
+ *  @return YES if download task is launched; NO - otherwise
  */
-- (BOOL)downloadUpdateWithConfigUrl:(NSURL *)configUrl currentVersion:(NSString *)currentVersion error:(NSError **)error;
+- (BOOL)executeDownloadRequest:(HCPUpdateRequest *)request error:(NSError **)error;
 
 /**
  *  Flag to check if we are doing any downloads at the moment.

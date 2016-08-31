@@ -6,6 +6,7 @@ import com.nordnetab.chcp.main.model.ManifestFile;
 import com.nordnetab.chcp.main.utils.FilesUtility;
 import com.nordnetab.chcp.main.utils.MD5;
 import com.nordnetab.chcp.main.utils.Paths;
+import com.nordnetab.chcp.main.utils.URLConnectionHelper;
 import com.nordnetab.chcp.main.utils.URLUtility;
 
 import java.io.BufferedInputStream;
@@ -18,6 +19,7 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by Nikolay Demyankov on 22.07.15.
@@ -36,14 +38,17 @@ public class FileDownloader {
      * @param downloadFolder   absolute path to the folder, where downloaded files should be placed
      * @param contentFolderUrl root url on the server, where all files are located
      * @param files            list of files to download
-     * @throws IOException
+     * @throws Exception
      * @see ManifestFile
      */
-    public static void downloadFiles(final String downloadFolder, final String contentFolderUrl, List<ManifestFile> files) throws IOException {
+    public static void downloadFiles(final String downloadFolder,
+                                     final String contentFolderUrl,
+                                     final List<ManifestFile> files,
+                                     final Map<String, String> requestHeaders) throws Exception {
         for (ManifestFile file : files) {
             String fileUrl = URLUtility.construct(contentFolderUrl, file.name);
             String filePath = Paths.get(downloadFolder, file.name);
-            download(fileUrl, filePath, file.hash);
+            download(fileUrl, filePath, file.hash, requestHeaders);
         }
     }
 
@@ -55,27 +60,23 @@ public class FileDownloader {
      * @param checkSum checksum of the file
      * @throws IOException
      */
-    public static void download(String urlFrom, String filePath, String checkSum) throws IOException {
+    public static void download(final String urlFrom,
+                                final String filePath,
+                                final String checkSum,
+                                final Map<String, String> requestHeaders) throws Exception {
         Log.d("CHCP", "Loading file: " + urlFrom);
+        final MD5 md5 = new MD5();
 
-        File downloadFile = new File(filePath);
+        final File downloadFile = new File(filePath);
         FilesUtility.delete(downloadFile);
         FilesUtility.ensureDirectoryExists(downloadFile.getParentFile());
 
-        MD5 md5 = new MD5();
+        // download file
+        final URLConnection connection = URLConnectionHelper.createConnectionToURL(urlFrom, requestHeaders);
+        final InputStream input = new BufferedInputStream(connection.getInputStream());
+        final OutputStream output = new BufferedOutputStream(new FileOutputStream(filePath, false));
 
-        URL downloadUrl = URLUtility.stringToUrl(urlFrom);
-        if (downloadUrl == null) {
-            throw new IOException("Invalid url format");
-        }
-
-        URLConnection connection = downloadUrl.openConnection();
-        connection.connect();
-
-        InputStream input = new BufferedInputStream(downloadUrl.openStream());
-        OutputStream output = new BufferedOutputStream(new FileOutputStream(filePath, false));
-
-        byte data[] = new byte[1024];
+        final byte data[] = new byte[1024];
         int count;
         while ((count = input.read(data)) != -1) {
             output.write(data, 0, count);
@@ -86,7 +87,7 @@ public class FileDownloader {
         output.close();
         input.close();
 
-        String downloadedFileHash = md5.calculateHash();
+        final String downloadedFileHash = md5.calculateHash();
         if (!downloadedFileHash.equals(checkSum)) {
             throw new IOException("File is corrupted: checksum " + checkSum + " doesn't match hash " + downloadedFileHash + " of the downloaded file");
         }

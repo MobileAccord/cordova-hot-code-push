@@ -16,7 +16,14 @@
  *
  *  @return build version of the app
  */
-+ (NSInteger)applicationBuildVersion;
++ (NSString *)applicationBuildVersion;
+
+/**
+ *  Getter for application's version name.
+ *
+ *  @return version name of the app
+ */
++ (NSString *)applicationVersionName;
 
 /**
  *  Path to the www folder in the application bundle.

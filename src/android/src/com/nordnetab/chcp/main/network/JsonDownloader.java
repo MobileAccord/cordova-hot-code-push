@@ -1,11 +1,13 @@
 package com.nordnetab.chcp.main.network;
 
+import com.nordnetab.chcp.main.utils.URLConnectionHelper;
 import com.nordnetab.chcp.main.utils.URLUtility;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.Map;
 
 /**
  * Created by Nikolay Demyankov on 22.07.15.
@@ -17,7 +19,8 @@ import java.net.URLConnection;
  */
 abstract class JsonDownloader<T> {
 
-    private String downloadUrl;
+    private final String downloadUrl;
+    private final Map<String, String> requestHeaders;
 
     /**
      * Create instance of the object from json string.
@@ -32,8 +35,9 @@ abstract class JsonDownloader<T> {
      *
      * @param url url from which JSON should be loaded
      */
-    public JsonDownloader(String url) {
+    public JsonDownloader(final String url, final Map<String, String> requestHeaders) {
         this.downloadUrl = url;
+        this.requestHeaders = requestHeaders;
     }
 
     /**
@@ -60,17 +64,13 @@ abstract class JsonDownloader<T> {
     }
 
     private String downloadJson() throws Exception {
-        StringBuilder jsonContent = new StringBuilder();
+        final StringBuilder jsonContent = new StringBuilder();
 
-        URL url = URLUtility.stringToUrl(downloadUrl);
-        if (url == null) {
-            throw new Exception("Invalid url format:" + downloadUrl);
-        }
+        final URLConnection urlConnection = URLConnectionHelper.createConnectionToURL(downloadUrl, requestHeaders);
+        final InputStreamReader streamReader = new InputStreamReader(urlConnection.getInputStream());
+        final BufferedReader bufferedReader = new BufferedReader(streamReader);
 
-        URLConnection urlConnection = url.openConnection();
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
-
-        char data[] = new char[1024];
+        final char data[] = new char[1024];
         int count;
         while ((count = bufferedReader.read(data)) != -1) {
             jsonContent.append(data, 0, count);

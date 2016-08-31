@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<plugin id="cordova-hot-code-push-plugin" version="1.2.6" xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
+<plugin id="cordova-hot-code-push-plugin" version="1.5.0" xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
 
   <name>Hot Code Push Plugin</name>
   <description>Cordova plugin to perform code updates on the fly</description>
@@ -107,6 +107,9 @@
     <header-file src="src/ios/Storage/HCPPluginInternalPreferences+UserDefaults.h" target-dir="Storage/"/>
 
     <!-- sources for Updater folder -->
+    <source-file src="src/ios/Updater/HCPFetchUpdateOptions.m" target-dir="Updater/"/>
+    <header-file src="src/ios/Updater/HCPFetchUpdateOptions.h" target-dir="Updater/"/>
+
     <source-file src="src/ios/Updater/HCPInstallationWorker.m" target-dir="Updater/"/>
     <header-file src="src/ios/Updater/HCPInstallationWorker.h" target-dir="Updater/"/>
 
@@ -118,6 +121,9 @@
 
     <source-file src="src/ios/Updater/HCPUpdateLoaderWorker.m" target-dir="Updater/"/>
     <header-file src="src/ios/Updater/HCPUpdateLoaderWorker.h" target-dir="Updater/"/>
+
+    <source-file src="src/ios/Updater/HCPUpdateRequest.m" target-dir="Updater/"/>
+    <header-file src="src/ios/Updater/HCPUpdateRequest.h" target-dir="Updater/"/>
 
     <header-file src="src/ios/Updater/HCPWorker.h" target-dir="Updater/"/>
 
@@ -145,6 +151,10 @@
 
     <source-file src="src/ios/Utils/HCPAssetsFolderHelper.m" target-dir="Utils/"/>
     <header-file src="src/ios/Utils/HCPAssetsFolderHelper.h" target-dir="Utils/"/>
+
+    <!-- sources for WKWebViewFix folder -->
+    <source-file src="src/ios/WKWebViewFix/CDVWKWebViewEngine+HCPPlugin_ReadAccessURL.m" target-dir="WKWebViewFix/"/>
+    <header-file src="src/ios/WKWebViewFix/CDVWKWebViewEngine+HCPPlugin_ReadAccessURL.h" target-dir="WKWebViewFix/"/>
 
   </platform>
 
@@ -177,10 +187,13 @@
     <source-file src="src/android/src/com/nordnetab/chcp/main/config/ChcpXmlConfig.java" target-dir="src/com/nordnetab/chcp/main/config"/>
     <source-file src="src/android/src/com/nordnetab/chcp/main/config/ChcpXmlConfigParser.java" target-dir="src/com/nordnetab/chcp/main/config"/>
     <source-file src="src/android/src/com/nordnetab/chcp/main/config/XmlTags.java" target-dir="src/com/nordnetab/chcp/main/config"/>
+    <source-file src="src/android/src/com/nordnetab/chcp/main/config/FetchUpdateOptions.java" target-dir="src/com/nordnetab/chcp/main/config"/>
 
     <!-- sources for package: com.nordnetab.chcp.events -->
     <source-file src="src/android/src/com/nordnetab/chcp/main/events/AssetsInstallationErrorEvent.java" target-dir="src/com/nordnetab/chcp/main/events"/>
     <source-file src="src/android/src/com/nordnetab/chcp/main/events/AssetsInstalledEvent.java" target-dir="src/com/nordnetab/chcp/main/events"/>
+    <source-file src="src/android/src/com/nordnetab/chcp/main/events/BeforeAssetsInstalledEvent.java" target-dir="src/com/nordnetab/chcp/main/events"/>
+    <source-file src="src/android/src/com/nordnetab/chcp/main/events/BeforeInstallEvent.java" target-dir="src/com/nordnetab/chcp/main/events"/>
     <source-file src="src/android/src/com/nordnetab/chcp/main/events/IPluginEvent.java" target-dir="src/com/nordnetab/chcp/main/events"/>
     <source-file src="src/android/src/com/nordnetab/chcp/main/events/NothingToInstallEvent.java" target-dir="src/com/nordnetab/chcp/main/events"/>
     <source-file src="src/android/src/com/nordnetab/chcp/main/events/NothingToUpdateEvent.java" target-dir="src/com/nordnetab/chcp/main/events"/>
@@ -221,6 +234,8 @@
     <source-file src="src/android/src/com/nordnetab/chcp/main/utils/URLUtility.java" target-dir="src/com/nordnetab/chcp/main/utils"/>
     <source-file src="src/android/src/com/nordnetab/chcp/main/utils/VersionHelper.java" target-dir="src/com/nordnetab/chcp/main/utils"/>
     <source-file src="src/android/src/com/nordnetab/chcp/main/utils/CleanUpHelper.java" target-dir="src/com/nordnetab/chcp/main/utils"/>
+    <source-file src="src/android/src/com/nordnetab/chcp/main/utils/URLConnectionHelper.java" target-dir="src/com/nordnetab/chcp/main/utils"/>
+    <source-file src="src/android/src/com/nordnetab/chcp/main/utils/JSONUtils.java" target-dir="src/com/nordnetab/chcp/main/utils"/>
 
     <!-- sources for package: com.nordnetab.chcp.updater -->
     <source-file src="src/android/src/com/nordnetab/chcp/main/updater/InstallationWorker.java" target-dir="src/com/nordnetab/chcp/main/updater"/>
@@ -228,6 +243,7 @@
     <source-file src="src/android/src/com/nordnetab/chcp/main/updater/UpdatesInstaller.java" target-dir="src/com/nordnetab/chcp/main/updater"/>
     <source-file src="src/android/src/com/nordnetab/chcp/main/updater/UpdatesLoader.java" target-dir="src/com/nordnetab/chcp/main/updater"/>
     <source-file src="src/android/src/com/nordnetab/chcp/main/updater/WorkerTask.java" target-dir="src/com/nordnetab/chcp/main/updater"/>
+    <source-file src="src/android/src/com/nordnetab/chcp/main/updater/UpdateDownloadRequest.java" target-dir="src/com/nordnetab/chcp/main/updater"/>
 
     <!-- sources for package: com.nordnetab.chcp.js -->
     <source-file src="src/android/src/com/nordnetab/chcp/main/js/PluginResultHelper.java" target-dir="src/com/nordnetab/chcp/main/js"/>

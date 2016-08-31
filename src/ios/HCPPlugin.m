@@ -22,6 +22,7 @@
 #import "HCPAssetsFolderHelper.h"
 #import "NSError+HCPExtension.h"
 #import "HCPCleanupHelper.h"
+#import "HCPUpdateRequest.h"
 
 @interface HCPPlugin() {
     HCPFilesStructure *_filesStructure;
@@ -34,6 +35,7 @@
     HCPApplicationConfig *_appConfig;
     HCPAppUpdateRequestAlertDialog *_appUpdateRequestDialog;
     NSString *_indexPage;
+    NSMutableArray<CDVPluginResult *> *_defaultCallbackStoredResults;
 }
 
 @end
@@ -57,11 +59,7 @@ static NSString *const DEFAULT_STARTING_PAGE = @"index.html";
     }
     
     // cleanup file system: remove older releases, except current and the previous one
-    if (_pluginInternalPrefs.currentReleaseVersionName.length > 0) {
-        [HCPCleanupHelper removeUnusedReleasesExcept:@[_pluginInternalPrefs.currentReleaseVersionName,
-                                                       _pluginInternalPrefs.previousReleaseVersionName,
-                                                       _pluginInternalPrefs.readyForInstallationReleaseVersionName]];
-    }
+    [self cleanupFileSystemFromOldReleases];
     
     _isPluginReadyForWork = YES;
     [self resetIndexPageToExternalStorage];
@@ -123,7 +121,7 @@ static NSString *const DEFAULT_STARTING_PAGE = @"index.html";
  */
 - (BOOL)isWWwFolderNeedsToBeInstalled {
     NSFileManager *fileManager = [NSFileManager defaultManager];
-    BOOL isApplicationUpdated = [NSBundle applicationBuildVersion] != _pluginInternalPrefs.appBuildVersion;
+    BOOL isApplicationUpdated = ![[NSBundle applicationBuildVersion] isEqualToString:_pluginInternalPrefs.appBuildVersion];
     BOOL isWWwFolderExists = [fileManager fileExistsAtPath:_filesStructure.wwwFolder.path];
     BOOL isWWwFolderInstalled = _pluginInternalPrefs.isWwwFolderInstalled;
     
@@ -134,6 +132,8 @@ static NSString *const DEFAULT_STARTING_PAGE = @"index.html";
  *  Perform initialization of the plugin variables.
  */
 - (void)doLocalInit {
+    _defaultCallbackStoredResults = [[NSMutableArray alloc] init];
+    
     // init plugin config from xml
     _pluginXmlConfig = [HCPXmlConfig loadFromCordovaConfigXml];
     
@@ -157,15 +157,24 @@ static NSString *const DEFAULT_STARTING_PAGE = @"index.html";
  *
  *  @return <code>YES</code> if download process started; <code>NO</code> otherwise
  */
-- (BOOL)_fetchUpdate:(NSString *)callbackId {
+- (BOOL)_fetchUpdate:(NSString *)callbackId withOptions:(HCPFetchUpdateOptions *)options {
     if (!_isPluginReadyForWork) {
         return NO;
     }
     
+    if (!options && self.defaultFetchUpdateOptions) {
+        options = self.defaultFetchUpdateOptions;
+    }
+    
+    HCPUpdateRequest *request = [[HCPUpdateRequest alloc] init];
+    request.configURL = options.configFileURL ? options.configFileURL : _pluginXmlConfig.configUrl;
+    request.requestHeaders = options.requestHeaders;
+    request.currentWebVersion = _pluginInternalPrefs.currentReleaseVersionName;
+    request.currentNativeVersion = _pluginXmlConfig.nativeInterfaceVersion;
+    
     NSError *error = nil;
-    [[HCPUpdateLoader sharedInstance] downloadUpdateWithConfigUrl:_pluginXmlConfig.configUrl
-                                                   currentVersion:_pluginInternalPrefs.currentReleaseVersionName
-                                                            error:&error];
+    [[HCPUpdateLoader sharedInstance] executeDownloadRequest:request error:&error];
+    
     if (error) {
         if (callbackId) {
             CDVPluginResult *errorResult = [CDVPluginResult pluginResultWithActionName:kHCPUpdateDownloadErrorEvent
@@ -238,7 +247,7 @@ static NSString *const DEFAULT_STARTING_PAGE = @"index.html";
         NSURLRequest *request = [NSURLRequest requestWithURL:loadURL
                                                  cachePolicy:NSURLRequestReloadIgnoringCacheData
                                              timeoutInterval:10000];
-#if HCP_CORDOVA_VERSION >= 4
+#ifdef __CORDOVA_4_0_0
         [self.webViewEngine loadRequest:request];
 #else
         [self.webView loadRequest:request];
@@ -318,14 +327,30 @@ static NSString *const DEFAULT_STARTING_PAGE = @"index.html";
  *  For that we will use callback, received on plugin initialization stage.
  *
  *  @param result message to send to web side
+ *  @return YES - result was sent to the web page; NO - otherwise
  */
-- (void)invokeDefaultCallbackWithMessage:(CDVPluginResult *)result {
-    if (_defaultCallbackID == nil) {
+- (BOOL)invokeDefaultCallbackWithMessage:(CDVPluginResult *)result {
+    if (!_defaultCallbackID) {
+        [_defaultCallbackStoredResults addObject:result];
+        return NO;
+    }
+    
+    [result setKeepCallbackAsBool:YES];
+    [self.commandDelegate sendPluginResult:result callbackId:_defaultCallbackID];
+    
+    return YES;
+}
+
+- (void)dispatchDefaultCallbackStoredResults {
+    if (!_defaultCallbackID || _defaultCallbackStoredResults.count == 0) {
         return;
     }
-    [result setKeepCallbackAsBool:YES];
     
-    [self.commandDelegate sendPluginResult:result callbackId:_defaultCallbackID];
+    for (CDVPluginResult *callResult in _defaultCallbackStoredResults) {
+        [callResult setKeepCallbackAsBool:YES];
+        [self.commandDelegate sendPluginResult:callResult callbackId:_defaultCallbackID];
+    }
+    [_defaultCallbackStoredResults removeAllObjects];
 }
 
 #pragma mark Events
@@ -356,6 +381,10 @@ static NSString *const DEFAULT_STARTING_PAGE = @"index.html";
     
     // bundle installation events
     [notificationCenter addObserver:self
+                           selector:@selector(onBeforeAssetsInstalledOnExternalStorageEvent:)
+                               name:kHCPBeforeBundleAssetsInstalledOnExternalStorageEvent
+                             object:nil];
+    [notificationCenter addObserver:self
                            selector:@selector(onAssetsInstalledOnExternalStorageEvent:)
                                name:kHCPBundleAssetsInstalledOnExternalStorageEvent
                              object:nil];
@@ -384,6 +413,10 @@ static NSString *const DEFAULT_STARTING_PAGE = @"index.html";
                                name:kHCPUpdateInstallationErrorEvent
                              object:nil];
     [notificationCenter addObserver:self
+                           selector:@selector(onBeforeInstallEvent:)
+                               name:kHCPBeforeInstallEvent
+                             object:nil];
+    [notificationCenter addObserver:self
                            selector:@selector(onUpdateInstalledEvent:)
                                name:kHCPUpdateIsInstalledEvent
                              object:nil];
@@ -404,7 +437,17 @@ static NSString *const DEFAULT_STARTING_PAGE = @"index.html";
 #pragma mark Bundle installation events
 
 /**
- *  Method is called when we successfully installed www folder from bundle onto the external storage
+ *  Method is called when we about to start installing www folder from bundle onto the external storage.
+ *
+ *  @param notification captured notification with event details
+ */
+- (void)onBeforeAssetsInstalledOnExternalStorageEvent:(NSNotification *)notification {
+    CDVPluginResult *result = [CDVPluginResult pluginResultForNotification:notification];
+    [self invokeDefaultCallbackWithMessage:result];
+}
+
+/**
+ *  Method is called when we successfully installed www folder from bundle onto the external storage.
  *
  *  @param notification captured notification with event details
  */
@@ -426,7 +469,7 @@ static NSString *const DEFAULT_STARTING_PAGE = @"index.html";
     if (_pluginXmlConfig.isUpdatesAutoDownloadAllowed &&
         ![HCPUpdateLoader sharedInstance].isDownloadInProgress &&
         ![HCPUpdateInstaller sharedInstance].isInstallationInProgress) {
-        [self _fetchUpdate:nil];
+        [self _fetchUpdate:nil withOptions:nil];
     }
 }
 
@@ -542,6 +585,18 @@ static NSString *const DEFAULT_STARTING_PAGE = @"index.html";
 }
 
 /**
+ *  Method is called when installation is about to begin
+ *
+ *  @param notification captured notification with the event details
+ */
+- (void)onBeforeInstallEvent:(NSNotification *)notification {
+    CDVPluginResult *pluginResult = [CDVPluginResult pluginResultForNotification:notification];
+    
+    // send notification to the default callback
+    [self invokeDefaultCallbackWithMessage:pluginResult];
+}
+
+/**
  *  Method is called when error occured during the installation process.
  *
  *  @param notification captured notification with the event details
@@ -594,6 +649,8 @@ static NSString *const DEFAULT_STARTING_PAGE = @"index.html";
     
     // reload application to the index page
     [self loadURL:[self indexPageFromConfigXml]];
+    
+    [self cleanupFileSystemFromOldReleases];
 }
 
 #pragma mark Rollback process
@@ -635,15 +692,28 @@ static NSString *const DEFAULT_STARTING_PAGE = @"index.html";
     }
 }
 
+#pragma mark Cleanup process
+
+- (void)cleanupFileSystemFromOldReleases {
+    if (!_pluginInternalPrefs.currentReleaseVersionName.length) {
+        return;
+    }
+    
+    [HCPCleanupHelper removeUnusedReleasesExcept:@[_pluginInternalPrefs.currentReleaseVersionName,
+                                                   _pluginInternalPrefs.previousReleaseVersionName,
+                                                   _pluginInternalPrefs.readyForInstallationReleaseVersionName]];
+}
+
 #pragma mark Methods, invoked from Javascript
 
 - (void)jsInitPlugin:(CDVInvokedUrlCommand *)command {
     _defaultCallbackID = command.callbackId;
+    [self dispatchDefaultCallbackStoredResults];
     
     if (_pluginXmlConfig.isUpdatesAutoDownloadAllowed &&
         ![HCPUpdateLoader sharedInstance].isDownloadInProgress &&
         ![HCPUpdateInstaller sharedInstance].isInstallationInProgress) {
-        [self _fetchUpdate:nil];
+        [self _fetchUpdate:nil withOptions:nil];
     }
 }
 
@@ -665,8 +735,11 @@ static NSString *const DEFAULT_STARTING_PAGE = @"index.html";
     if (!_isPluginReadyForWork) {
         [self sendPluginNotReadyToWorkMessageForEvent:kHCPUpdateDownloadErrorEvent callbackID:command.callbackId];
     }
+
+    NSDictionary *optionsFromJS = command.arguments.count ? command.arguments[0] : nil;
+    HCPFetchUpdateOptions *fetchOptions = [[HCPFetchUpdateOptions alloc] initWithDictionary:optionsFromJS];
     
-    [self _fetchUpdate:command.callbackId];
+    [self _fetchUpdate:command.callbackId withOptions:fetchOptions];
 }
 
 - (void)jsInstallUpdate:(CDVInvokedUrlCommand *)command {
@@ -700,11 +773,36 @@ static NSString *const DEFAULT_STARTING_PAGE = @"index.html";
     [_appUpdateRequestDialog show];
 }
 
+- (void)jsIsUpdateAvailableForInstallation:(CDVInvokedUrlCommand *)command {
+    NSDictionary *data = nil;
+    NSError *error = nil;
+    if (_pluginInternalPrefs.readyForInstallationReleaseVersionName.length) {
+        data = @{@"currentVersion": _pluginInternalPrefs.currentReleaseVersionName,
+                 @"readyToInstallVersion": _pluginInternalPrefs.readyForInstallationReleaseVersionName};
+    } else {
+        error = [NSError errorWithCode:kHCPNothingToInstallErrorCode description:@"Nothing to install"];
+    }
+    
+    CDVPluginResult *result = [CDVPluginResult pluginResultWithActionName:nil data:data error:error];
+    [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+}
+
+- (void)jsGetVersionInfo:(CDVInvokedUrlCommand *)command {
+    NSDictionary *data = @{@"currentWebVersion": _pluginInternalPrefs.currentReleaseVersionName,
+                           @"readyToInstallWebVersion": _pluginInternalPrefs.readyForInstallationReleaseVersionName,
+                           @"previousWebVersion": _pluginInternalPrefs.previousReleaseVersionName,
+                           @"appVersion": [NSBundle applicationVersionName],
+                           @"buildVersion": [NSBundle applicationBuildVersion]};
+
+    CDVPluginResult *result = [CDVPluginResult pluginResultWithActionName:nil data:data error:nil];
+    [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+}
+
 - (void)sendPluginNotReadyToWorkMessageForEvent:(NSString *)eventName callbackID:(NSString *)callbackID {
     NSError *error = [NSError errorWithCode:kHCPAssetsNotYetInstalledErrorCode
                                 description:@"WWW folder from the bundle is not yet installed on the external device. Please, wait for this operation to finish."];
     CDVPluginResult *errorResult = [CDVPluginResult pluginResultWithActionName:eventName
-                                                             applicationConfig:nil
+                                                                          data:nil
                                                                          error:error];
     [self.commandDelegate sendPluginResult:errorResult callbackId:callbackID];
 }

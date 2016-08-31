@@ -1,14 +1,77 @@
 # Change Log
 
-# 1.2.6 (2016-04-11)
+## 1.5.0 (2016-08-30)
+
+**Bug fixes:**
+
+- [Issue #197](https://github.com/nordnet/cordova-hot-code-push/issues/197). Android can now update files with spaces in their names.
+
+**Improvements:**
+
+- Merged [pull request #204](https://github.com/nordnet/cordova-hot-code-push/pull/204). Initial installation of the assets on the external storage on Android is now much faster. Thanks to [@Mikey1982](https://github.com/Mikey1982).
+- Added new JS method: `getVersionInfo`. Based on [pull request #170](https://github.com/nordnet/cordova-hot-code-push/pull/170) from [@Manduro](https://github.com/Manduro) - thank you. For documentation, please, refer to [wikki page](https://github.com/nordnet/cordova-hot-code-push/wiki/Get-version-information).
+
+## 1.4.0 (2016-06-21)
+
+**Bug fixes:**
+
+- [Issue #155](https://github.com/nordnet/cordova-hot-code-push/issues/155). Android app should not crash if server has a bad `chcp.json` file.
+
+**Improvements:**
+
+- [Issue #153](https://github.com/nordnet/cordova-hot-code-push/issues/153). You can now pass `chcp.json` file url into `fetchUpdate` method on JS side. Also, you can provide additional HTTP headers to the request. For example, authorization info. These headers will be used for loading configuration files and updated/changed files from your server. Thanks to [@davidovich](https://github.com/davidovich) for [pull request #150](https://github.com/nordnet/cordova-hot-code-push/pull/150).
+- [Issue #99](https://github.com/nordnet/cordova-hot-code-push/issues/99). iOS build version can now be a string. So, changing it from 1.0.0 to 1.0.1 will trigger reinstallation of `www` folder. Before that it had to be an integer.
+- [Issue #160](https://github.com/nordnet/cordova-hot-code-push/issues/160). Old releases are now gets removed after update installation. Previously cleanup was performed only on application restart.
+
+## 1.3.2 (2016-04-27)
+
+**Bug fixes:**
+
+- [Issue #137](https://github.com/nordnet/cordova-hot-code-push/issues/137). Fixed installation failure on Windows. Thanks to [@oxiao](https://github.com/oxiao) for providing the fix.
+
+## 1.3.1 (2016-04-25)
+
+**Bug fixes:**
+
+- [Issue #139](https://github.com/nordnet/cordova-hot-code-push/issues/139). If you don't have `cordova-hcp` client - installation will not fail.
+- Fixed typo in `before_plugin_install` hook. If installation failed - it will now throw a correct error.
+
+**Enhancements:**
+
+- iOS. Switched from custom API version check macro to the Cordova's one: `__CORDOVA_4_0_0`. Less JS code in the hooks, more proper API switching in the code.
+
+**Docs:**
+
+- Minified readme file. Moved documentation into [Wiki](https://github.com/nordnet/cordova-hot-code-push/wiki).
+
+## 1.3.0 (2016-04-22)
+
+**Enhancements:**
+
+- Merged [pull request #101](https://github.com/nordnet/cordova-hot-code-push/pull/101). Plugin now dispatches `chcp_beforeInstall` event before installing new update. Thanks to [@toostn](https://github.com/toostn).
+- Merged [pull request #107](https://github.com/nordnet/cordova-hot-code-push/pull/107). In Android we now set connection timeout for configs/files download, so the process would not hang. Thanks to [@kenvuz](https://github.com/kenvunz).
+- [Issue #105](https://github.com/nordnet/cordova-hot-code-push/issues/105). Plugin now dispatches `chcp_beforeAssetsInstalledOnExternalStorage` event, when it's about to install assets on external storage.
+- [Issue #102](https://github.com/nordnet/cordova-hot-code-push/issues/102). You can now check from the JS side, if update was loaded on the device and ready to be installed. Later on will be added method to check update availability on the server side.
+- [Issue #45](https://github.com/nordnet/cordova-hot-code-push/issues/45). Added `<native-interface version="" />` tag to define application's native interface version. Plugin will now use it instead of the application's code version.
+- [Issue #85](https://github.com/nordnet/cordova-hot-code-push/issues/85). Adde support for `cordova-plugin-wkwebview-engine` plugin.
+- Dependency node modules are now installed in the plugin's folder, instead of the project's root folder.
+
+**Docs:**
+
+- Added info about migrating to v1.3.0 in `Migrating from previous version` section.
+- Added `Check if update was loaded and ready to be installed` section.
+- Updated `Cordova config preferences` section.
+- Updated `JavaScript module` section.
+
+## 1.2.6 (2016-04-11)
 
 **Bug fixes:**
 
 - Fixed [issue #129](https://github.com/nordnet/cordova-hot-code-push/issues/129). `plugin.xml` was missing scheme for android. Thanks to [@Christianuchermannuc](https://github.com/Christianuchermannuc).
 - Fixed [issue #132](https://github.com/nordnet/cordova-hot-code-push/issues/132). Problem was with the EventBus on Android: package name has changed.
-- In the plugin's header file iOS Cordova platform version is now set to `4` by default. Previously it was `3`.
+- Fixed [issue #109](https://github.com/nordnet/cordova-hot-code-push/issues/109). In the plugin's header file iOS Cordova platform version is now set to `4` by default. Previously it was `3`.
 
-# 1.2.5 (2016-02-05)
+## 1.2.5 (2016-02-05)
 
 **Bug fixes:**
 
@@ -17,7 +80,7 @@
 - Fixed [issue #97](https://github.com/nordnet/cordova-hot-code-push/issues/97).
 - Merged [PR #94](https://github.com/nordnet/cordova-hot-code-push/pull/94). Android version of the plugin should now be compatible with other plugins, that are using EventBus. Thanks to [@Steffaan](https://github.com/Steffaan).
 
-# 1.2.4 (2016-01-17)
+## 1.2.4 (2016-01-17)
 
 **Bug fixes:**
 
@@ -25,14 +88,14 @@
 - Fixed [issue #88](https://github.com/nordnet/cordova-hot-code-push/issues/88).
 - Fixed [issue #90](https://github.com/nordnet/cordova-hot-code-push/issues/90).
 
-# 1.2.3 (2016-01-12)
+## 1.2.3 (2016-01-12)
 
 **Bug fixes:**
 
 - Fixed [issue #83](https://github.com/nordnet/cordova-hot-code-push/issues/83).
 - Fixed Cordova 5.4 warnings in the hooks.
 
-# 1.2.2 (2016-01-11)
+## 1.2.2 (2016-01-11)
 
 **Bug fixes:**
 
@@ -63,7 +126,7 @@ Second one is aimed to make updates more stable and more bulletproof, plus fix f
 - Fixed [issue #77](https://github.com/nordnet/cordova-hot-code-push/issues/77). On iOS `chcp.configure` now works the same way, as on Android: it accepts an object as an options, not a string.
 - Fixed potential rushing conditions on update download/installations. Right now there can be only one running update task.
 
-**Enchancements:**
+**Enhancements:**
 
 - Changed the way on how web files are stored on the external storage. That made updates more stable, plus fixes the caching issue.
 - Merged [pull request #67](https://github.com/nordnet/cordova-hot-code-push/pull/67). If code version of the application has changed (incresed or decreased) - it is considered as updated and `www` folder is reinstalled on the external storage. Thanks to [@hassellof](https://github.com/hassellof).
@@ -88,7 +151,7 @@ Second one is aimed to make updates more stable and more bulletproof, plus fix f
 - Fixed [issue #49](https://github.com/nordnet/cordova-hot-code-push/issues/49) and [issue #48](https://github.com/nordnet/cordova-hot-code-push/issues/48). Added support for Cordova v5.4.
 - Other fixes for both platforms, that aimed to make update procedure safer for the user.
 
-**Enchancements:**
+**Enhancements:**
 
 - Merged [pull request #40](https://github.com/nordnet/cordova-hot-code-push/pull/40). Preparation to add auth headers to the network requests. Thanks to [@davidovich](https://github.com/davidovich).
 - Merged [pull request #52](https://github.com/nordnet/cordova-hot-code-push/pull/52). Thanks to [@legege](https://github.com/legege).
@@ -106,7 +169,7 @@ Release holds only some documentation updates:
 
 ## 1.1.0 (2015-11-10)
 
-**Enchancements:**
+**Enhancements:**
 
 - Moved local development mode to the separate plugin: https://github.com/nordnet/cordova-hot-code-push-local-dev-addon
 - Node modules installed only once after plugin is added. Installation of the new plugin is not gonna trigger it, as before.
@@ -129,7 +192,7 @@ Since local development mode was moved to the separate plugin - that should fix 
 
 - iOS. Fixed [issue #2](https://github.com/nordnet/cordova-hot-code-push/issues/2). Ionic application should refresh it's content and ignore UIWebView cache.
 
-**Enchancements:**
+**Enhancements:**
 
 - Merged [pull request #27](https://github.com/nordnet/cordova-hot-code-push/pull/27). Error message now has an url of the file that we failed to load from the server. Thanks to [ptarjan](https://github.com/ptarjan).
 - Merged [pull request #29](https://github.com/nordnet/cordova-hot-code-push/pull/29). Error message now has an url of the config file that we failed to load from the server. Thanks to [ptarjan](https://github.com/ptarjan).
@@ -142,7 +205,7 @@ Since local development mode was moved to the separate plugin - that should fix 
 - Fixed [issue #11](https://github.com/nordnet/cordova-hot-code-push/issues/11). `ionic state restore` will not hang any more.
 - Fixed [issue #13](https://github.com/nordnet/cordova-hot-code-push/issues/13). Plugin is not gonna crash your application, if `content_url` is not set in the application config. Although, you should always set `content_url` in order for plugin to work.
 
-**Enchancements:**
+**Enhancements:**
 
 - As asked in [issue #12](https://github.com/nordnet/cordova-hot-code-push/issues/12) - plugin is not gonna show unnecessary messages in the console.
 - Changed workflow on `chcpbuild.options`. From now on you should add `chcp-` prefix to the build options, when you use them with the `build` command: `cordova build -- chcp-buildOptionName`. More info can be found in the Readme.

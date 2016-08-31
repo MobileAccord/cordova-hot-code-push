@@ -24,6 +24,11 @@ extern NSString *const kHCPNothingToUpdateEvent;
 extern NSString *const kHCPUpdateIsReadyForInstallationEvent;
 
 /**
+ *  Event is dispatched when installation is about to begin
+ */
+extern NSString *const kHCPBeforeInstallEvent;
+
+/**
  *  Event is dispatched we failed to install the update.
  */
 extern NSString *const kHCPUpdateInstallationErrorEvent;
@@ -37,6 +42,11 @@ extern NSString *const kHCPUpdateIsInstalledEvent;
  *  Event is dispatched when there is nothing to install.
  */
 extern NSString *const kHCPNothingToInstallEvent;
+
+/**
+ *  Event is dispatched right before plugin will start installing application assets on the external storage.
+ */
+extern NSString *const kHCPBeforeBundleAssetsInstalledOnExternalStorageEvent;
 
 /**
  *  Event is dispatched when we successfully installed web content from bundle onto the external storage.

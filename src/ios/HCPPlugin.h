@@ -6,17 +6,22 @@
 
 #import <Cordova/CDVPlugin.h>
 #import <Cordova/CDV.h>
-
-#ifndef HCP_CORDOVA_VERSION
-#define HCP_CORDOVA_VERSION 4
-#endif
+#import "HCPFetchUpdateOptions.h"
 
 /**
  *  Plugin main class
  */
 @interface HCPPlugin : CDVPlugin
 
-// methods, invoked from JavaScript
+#pragma mark Properties
+
+/**
+ *  Fetch update preferences. Used by default if none provided from JS side.
+ *  Can be used to controll plugin's workflow from the native side.
+ */
+@property (nonatomic, strong) HCPFetchUpdateOptions *defaultFetchUpdateOptions;
+
+#pragma mark Methods, invoked from JavaScript
 
 /**
  *  Initialize application with callback from web side.
@@ -53,5 +58,19 @@
  *  @param command command with which the method is called
  */
 - (void)jsRequestAppUpdate:(CDVInvokedUrlCommand *)command;
+
+/**
+ *  Check if new version was loaded and can be installed.
+ *
+ *  @param command command with which the method is called
+ */
+- (void)jsIsUpdateAvailableForInstallation:(CDVInvokedUrlCommand *)command;
+
+/**
+ *  Get information about app and web versions.
+ *
+ *  @param command command with which the method is called
+ */
+- (void)jsGetVersionInfo:(CDVInvokedUrlCommand *)command;
 
 @end

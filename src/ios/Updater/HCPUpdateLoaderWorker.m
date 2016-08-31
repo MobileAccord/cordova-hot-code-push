@@ -6,7 +6,6 @@
 
 #import "HCPUpdateLoaderWorker.h"
 #import "NSJSONSerialization+HCPExtension.h"
-#import "NSBundle+HCPExtension.h"
 #import "HCPManifestDiff.h"
 #import "HCPManifestFile.h"
 #import "HCPApplicationConfigStorage.h"
@@ -20,12 +19,15 @@
 @interface HCPUpdateLoaderWorker() {
     NSURL *_configURL;
     HCPFilesStructure *_pluginFiles;
+    NSUInteger _nativeInterfaceVersion;
     
     id<HCPConfigFileStorage> _appConfigStorage;
     id<HCPConfigFileStorage> _manifestStorage;
     
     HCPApplicationConfig *_oldAppConfig;
     HCPContentManifest *_oldManifest;
+    
+    NSDictionary *_requestHeaders;
     
     void (^_complitionBlock)(void);
 }
@@ -38,12 +40,14 @@
 
 #pragma mark Public API
 
-- (instancetype)initWithConfigUrl:(NSURL *)configURL currentVersion:(NSString *)currentVersion {
+- (instancetype)initWithRequest:(HCPUpdateRequest *)request {
     self = [super init];
     if (self) {
-        _configURL = configURL;
+        _configURL = [request.configURL copy];
+        _requestHeaders = [request.requestHeaders copy];
+        _nativeInterfaceVersion = request.currentNativeVersion;
         _workerId = [self generateWorkerId];
-        _pluginFiles = [[HCPFilesStructure alloc] initWithReleaseVersion:currentVersion];
+        _pluginFiles = [[HCPFilesStructure alloc] initWithReleaseVersion:request.currentWebVersion];
         _appConfigStorage = [[HCPApplicationConfigStorage alloc] initWithFileStructure:_pluginFiles];
         _manifestStorage = [[HCPContentManifestStorage alloc] initWithFileStructure:_pluginFiles];
     }
@@ -70,7 +74,7 @@
     HCPFileDownloader *configDownloader = [[HCPFileDownloader alloc] init];
     
     // download new application config
-    [configDownloader downloadDataFromUrl:_configURL completionBlock:^(NSData *data, NSError *error) {
+    [configDownloader downloadDataFromUrl:_configURL requestHeaders:_requestHeaders completionBlock:^(NSData *data, NSError *error) {
         HCPApplicationConfig *newAppConfig = [self getApplicationConfigFromData:data error:&error];
         if (newAppConfig == nil) {
             [self notifyWithError:[NSError errorWithCode:kHCPFailedToDownloadApplicationConfigErrorCode descriptionFromError:error]
@@ -85,7 +89,7 @@
         }
         
         // check if current native version supports new content
-        if (newAppConfig.contentConfig.minimumNativeVersion > [NSBundle applicationBuildVersion]) {
+        if (newAppConfig.contentConfig.minimumNativeVersion > _nativeInterfaceVersion) {
             [self notifyWithError:[NSError errorWithCode:kHCPApplicationBuildVersionTooLowErrorCode
                                              description:@"Application build version is too low for this update"]
                 applicationConfig:newAppConfig];
@@ -94,7 +98,7 @@
         
         // download new content manifest
         NSURL *manifestFileURL = [newAppConfig.contentConfig.contentURL URLByAppendingPathComponent:_pluginFiles.manifestFileName];
-        [configDownloader downloadDataFromUrl:manifestFileURL completionBlock:^(NSData *data, NSError *error) {
+        [configDownloader downloadDataFromUrl:manifestFileURL requestHeaders:_requestHeaders completionBlock:^(NSData *data, NSError *error) {
             HCPContentManifest *newManifest = [self getManifestConfigFromData:data error:&error];
             if (newManifest == nil) {
                 [self notifyWithError:[NSError errorWithCode:kHCPFailedToDownloadContentManifestErrorCode
@@ -143,11 +147,10 @@
     
     // download files
     HCPFileDownloader *downloader = [[HCPFileDownloader alloc] init];
-    // TODO: set credentials on downloader
-    
     [downloader downloadFiles:updatedFiles
                       fromURL:newAppConfig.contentConfig.contentURL
                      toFolder:_pluginFiles.downloadFolder
+               requestHeaders:_requestHeaders
               completionBlock:^(NSError * error) {
         if (error) {
             // remove new release folder
